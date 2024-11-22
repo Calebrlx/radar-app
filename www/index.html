@@ -1,0 +1,238 @@
+<html>
+
+<head>
+    <title>Stationary Radar Viewer</title>
+    <style>
+        body {
+            background: #001824;
+            color: #00ff00;
+            font-family: 'Courier New', monospace;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            min-height: 100vh;
+        }
+
+        .left-panel {
+            width: 60%;
+            padding: 20px;
+        }
+
+        .right-panel {
+            width: 35%;
+            padding: 20px;
+            background: rgba(0, 40, 0, 0.3);
+            border-left: 1px solid #00ff00;
+            overflow-y: auto;
+        }
+
+        .radar-container {
+            position: relative;
+            width: 600px;
+            height: 600px;
+            margin: 20px auto;
+        }
+
+        .radar-screen {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            border: 2px solid #00ff00;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .target {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background: #ff0000;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .target.selected {
+            background: #ffff00;
+            box-shadow: 0 0 10px #ffff00;
+        }
+
+        .target-list {
+            margin-top: 20px;
+        }
+
+        .target-item {
+            padding: 10px;
+            border: 1px solid #00ff00;
+            margin: 5px 0;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .target-item:hover {
+            background: rgba(0, 255, 0, 0.1);
+        }
+
+        .target-item.selected {
+            background: rgba(0, 255, 0, 0.2);
+        }
+
+        @keyframes blink {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.3;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="left-panel">
+        <h1>Radar Tracking System</h1>
+        <div class="radar-container">
+            <div class="radar-screen">
+                <svg class="range-circles" viewBox="0 0 600 600">
+                    <!-- Range circles -->
+                    <circle cx="300" cy="300" r="240" fill="none" stroke="#003300" stroke-width="1" />
+                    <circle cx="300" cy="300" r="180" fill="none" stroke="#003300" stroke-width="1" />
+                    <circle cx="300" cy="300" r="120" fill="none" stroke="#003300" stroke-width="1" />
+                    <circle cx="300" cy="300" r="60" fill="none" stroke="#003300" stroke-width="1" />
+                    <!-- Coordinate lines -->
+                    <line x1="300" y1="0" x2="300" y2="600" stroke="#003300" stroke-width="1" />
+                    <line x1="0" y1="300" x2="600" y2="300" stroke="#003300" stroke-width="1" />
+                    <!-- Angle markers -->
+                    <text x="310" y="30" fill="#003300">0°</text>
+                    <text x="570" y="310" fill="#003300">90°</text>
+                    <text x="310" y="590" fill="#003300">180°</text>
+                    <text x="20" y="310" fill="#003300">270°</text>
+                </svg>
+            </div>
+        </div>
+    </div>
+
+    <div class="right-panel">
+        <h2>Tracked Targets</h2>
+        <div id="target-list" class="target-list">
+            <!-- Target list will be populated here -->
+        </div>
+    </div>
+
+    <script>
+        const RANGE_MAX = 8.0;
+        let targets = [];
+        let selectedTargetId = null;
+
+        class Target {
+            constructor() {
+                this.id = Math.random().toString(36).substr(2, 9);
+                this.distance = Math.random() * RANGE_MAX;
+                this.angle = Math.random() * 360;
+                this.speed = Math.random() * 5;
+                this.trajectory = ["Approaching", "Stationary", "Departing"][Math.floor(Math.random() * 3)];
+                this.firstSeen = new Date().toLocaleTimeString();
+            }
+
+            update() {
+                // Update target movement based on trajectory
+                if (this.trajectory === "Approaching") {
+                    this.distance = Math.max(0, this.distance - (this.speed * 0.1));
+                } else if (this.trajectory === "Departing") {
+                    this.distance = Math.min(RANGE_MAX, this.distance + (this.speed * 0.1));
+                }
+                // Slightly vary angle
+                this.angle += (Math.random() - 0.5) * 2;
+                if (this.angle >= 360) this.angle -= 360;
+                if (this.angle < 0) this.angle += 360;
+            }
+        }
+
+        function createTarget() {
+            if (targets.length < 10) { // Limit to 10 targets
+                const target = new Target();
+                targets.push(target);
+                updateDisplay();
+            }
+        }
+
+        function removeTarget(id) {
+            targets = targets.filter(t => t.id !== id);
+            if (selectedTargetId === id) selectedTargetId = null;
+            updateDisplay();
+        }
+
+        function selectTarget(id) {
+            selectedTargetId = id;
+            updateDisplay();
+        }
+
+        function updateDisplay() {
+            // Update radar display
+            const radarScreen = document.querySelector('.radar-screen');
+
+            // Clear existing targets
+            const existingTargets = radarScreen.querySelectorAll('.target');
+            existingTargets.forEach(t => t.remove());
+
+            // Add updated targets
+            targets.forEach(target => {
+                const targetElement = document.createElement('div');
+                targetElement.className = `target ${target.id === selectedTargetId ? 'selected' : ''}`;
+
+                // Convert polar coordinates to Cartesian
+                const radius = (target.distance / RANGE_MAX) * 300;
+                const radian = (target.angle - 90) * Math.PI / 180;
+                const x = 300 + radius * Math.cos(radian);
+                const y = 300 + radius * Math.sin(radian);
+
+                targetElement.style.left = x + 'px';
+                targetElement.style.top = y + 'px';
+                targetElement.style.animation = target.trajectory === "Approaching" ? "blink 1s infinite" : "none";
+                targetElement.onclick = () => selectTarget(target.id);
+
+                radarScreen.appendChild(targetElement);
+            });
+
+            // Update target list
+            const targetList = document.getElementById('target-list');
+            targetList.innerHTML = targets.map(target => `
+        <div class="target-item ${target.id === selectedTargetId ? 'selected' : ''}" 
+             onclick="selectTarget('${target.id}')">
+            <div>ID: ${target.id}</div>
+            <div>Distance: ${target.distance.toFixed(2)}m</div>
+            <div>Angle: ${target.angle.toFixed(1)}°</div>
+            <div>Speed: ${target.speed.toFixed(1)} m/s</div>
+            <div>Trajectory: ${target.trajectory}</div>
+            <div>First Seen: ${target.firstSeen}</div>
+            <button onclick="removeTarget('${target.id}')">Remove Target</button>
+        </div>
+    `).join('');
+        }
+
+        // Create initial targets
+        for (let i = 0; i < 3; i++) {
+            createTarget();
+        }
+
+        // Update targets periodically
+        setInterval(() => {
+            targets.forEach(target => target.update());
+            updateDisplay();
+        }, 100);
+
+        // Randomly add new targets occasionally
+        setInterval(() => {
+            if (Math.random() < 0.1) { // 10% chance each interval
+                createTarget();
+            }
+        }, 5000);
+    </script>
+</body>
+
+</html>
