@@ -1,36 +1,52 @@
 import serial
 import time
 
-# Replace with your actual serial port
-RADAR_PORT = '/dev/ttyTHS1'  # Update this to the correct serial port
-RADAR_BAUDRATE = 256000      # Use the baud rate specified by your radar
+# Configuration for the radar module
+RADAR_PORT = '/dev/ttyTHS1'  # Update with the correct UART port for the Jetson Nano
+RADAR_BAUDRATE = 256000      # Default baud rate from the specifications
 
 def read_radar_data(serial_connection):
-    while True:
-        if serial_connection.in_waiting:
-            raw_data = serial_connection.readline()
-            try:
-                # Decode and strip any whitespace
-                raw_data = raw_data.decode("utf-8").strip()
+    """
+    Reads and displays radar data live from the serial connection.
+    """
+    try:
+        while True:
+            if serial_connection.in_waiting:
+                raw_data = serial_connection.readline().decode('utf-8').strip()
                 print(f"Raw Data: {raw_data}")
 
-                # Parse the raw data based on radar's data format
-                # For example purposes, we will just print it
-                # You will need to implement parsing logic here
+                # You can parse the raw data here if you know the format
+                # For now, we'll just display the raw data
+                # Example:
+                # parsed_data = parse_radar_data(raw_data)
+                # print(parsed_data)
 
-            except UnicodeDecodeError:
-                print("Received non-UTF-8 data. Skipping...")
-        else:
-            # No data waiting
-            pass
-        time.sleep(0.1)  # Adjust the interval as needed
+            time.sleep(0.1)  # Small delay to avoid excessive CPU usage
+    except KeyboardInterrupt:
+        print("\nStopping radar data read.")
+    except Exception as e:
+        print(f"Error: {e}")
+
+def main():
+    """
+    Main function to initialize the serial connection and read radar data.
+    """
+    try:
+        # Initialize serial connection
+        serial_connection = serial.Serial(
+            port=RADAR_PORT,
+            baudrate=RADAR_BAUDRATE,
+            timeout=1,
+        )
+        print(f"Serial connection established on {RADAR_PORT}. Reading data...\n")
+        
+        # Read and display radar data
+        read_radar_data(serial_connection)
+
+    except serial.SerialException as e:
+        print(f"Failed to connect to the radar module: {e}")
+    except Exception as e:
+        print(f"Unexpected error: {e}")
 
 if __name__ == "__main__":
-    try:
-        serial_connection = serial.Serial(RADAR_PORT, RADAR_BAUDRATE, timeout=1)
-        print(f"Serial connection established on {RADAR_PORT}. Reading data...\n")
-        read_radar_data(serial_connection)
-    except serial.SerialException as e:
-        print(f"Error: {e}")
-    except KeyboardInterrupt:
-        print("\nExiting...")
+    main()
