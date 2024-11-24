@@ -52,7 +52,7 @@ class RadarApp:
         self.target_list = ttk.Treeview(self.root, columns=("ID", "Distance", "Angle", "Speed", "Trajectory"))
         self.target_list.heading("#0", text="ID")
         self.target_list.heading("Distance", text="Distance (m)")
-        self.target_list.heading("Angle", text="Angle (°)")
+        self.target_list.heading("Angle", text="Angle (degree)")
         self.target_list.heading("Speed", text="Speed (m/s)")
         self.target_list.heading("Trajectory", text="Trajectory")
         self.target_list.column("#0", width=50)
