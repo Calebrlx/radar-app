@@ -8,7 +8,7 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import matplotlib.pyplot as plt
 
 # Radar setup
-RADAR_PORT = '/dev/ttyUSB0'
+RADAR_PORT = '/dev/ttyTHS1' 
 RADAR_BAUDRATE = 256000
 RANGE_MAX = 8.0  # Maximum range in meters
 
