@@ -48,7 +48,7 @@ def read_and_decode_data():
 
                     # Decode and print the packet in human-readable format
                     decoded_data = decode_packet(raw_data)
-                    print(f"Raw Data (Hex): {hex_output}")
+                    # print(f"Raw Data (Hex): {hex_output}")
                     print(f"Decoded Data: {decoded_data}")
 
                 time.sleep(0.1)  # Small delay to reduce CPU usage
