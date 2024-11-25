@@ -9,27 +9,27 @@ def decode_packet(raw_data):
     """
     Decodes a single packet of raw binary data from the radar module.
     The radar packet format is assumed to include:
-    - Distance (bytes 4-5, little-endian)
-    - Speed (bytes 6-7, little-endian)
-    - Signal strength (bytes 8-9, little-endian)
+    - Angle (bytes 4-5, little-endian)
+    - Distance (bytes 6-7, little-endian)
+    - Speed/Trajectory (bytes 8-9, little-endian)
     """
     try:
         if len(raw_data) < 10:  # Ensure the packet is long enough
-            return {"Distance (mm)": None, "Speed (mm/s)": None, "Signal Strength": None}
+            return {"Angle": None, "Distance (mm)": None, "Speed (mm/s)": None}
 
-        # Decode distance, speed, and signal strength
-        distance = int.from_bytes(raw_data[4:6], byteorder='little', signed=False)
-        speed = int.from_bytes(raw_data[6:8], byteorder='little', signed=False)
-        signal_strength = int.from_bytes(raw_data[8:10], byteorder='little', signed=False)
+        # Decode angle, distance, and speed
+        angle = int.from_bytes(raw_data[4:6], byteorder='little', signed=False)
+        distance = int.from_bytes(raw_data[6:8], byteorder='little', signed=False)
+        speed = int.from_bytes(raw_data[8:10], byteorder='little', signed=False)
 
         return {
+            "Angle": angle,
             "Distance (mm)": distance,
             "Speed (mm/s)": speed,
-            "Signal Strength": signal_strength,
         }
     except Exception as e:
         print(f"Error decoding packet: {e}")
-        return {"Distance (mm)": None, "Speed (mm/s)": None, "Signal Strength": None}
+        return {"Angle": None, "Distance (mm)": None, "Speed (mm/s)": None}
 
 def read_and_decode_data():
     """
