@@ -18,7 +18,9 @@ def read_raw_data():
             while True:
                 if ser.in_waiting:  # Check if there is data waiting to be read
                     raw_data = ser.read(ser.in_waiting)  # Read all available data
-                    print(f"Raw Data (Hex): {raw_data.hex(' ')}")  # Print in hex format
+                    # Manually format the hex output
+                    hex_output = ' '.join(f'{byte:02x}' for byte in raw_data)
+                    print(f"Raw Data (Hex): {hex_output}")  # Print in hex format
 
                 time.sleep(0.1)  # Small delay to reduce CPU usage
 
