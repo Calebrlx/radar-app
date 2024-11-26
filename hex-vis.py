@@ -13,8 +13,9 @@ RADAR_BAUDRATE = 256000
 RANGE_MAX = 8.0  # Maximum range in meters
 
 # Conversion factors based on measurements
-ANGLE_MAX_VALUE_LEFT = 34000  # Maximum value representing left FOV boundary
-ANGLE_MAX_VALUE_RIGHT = 2000  # Maximum value representing right FOV boundary
+ANGLE_MAX_VALUE_LEFT = 34000  # Maximum value representing left 60 degrees boundary
+ANGLE_MIN_VALUE_LEFT = 32770  # Minimum value representing 0 degrees from left
+ANGLE_MAX_VALUE_RIGHT = 2000  # Maximum value representing right 60 degrees
 DISTANCE_CONVERSION_FACTOR = 33900  # Value representing 1 meter away
 ADDITIONAL_DISTANCE_FACTOR = 800  # Approximate value increment per meter after 1 meter
 
@@ -140,9 +141,12 @@ class RadarApp:
 
                 if target_data:
                     # Convert angle and distance to meters and degrees
-                    if target_data["angle"] >= ANGLE_MAX_VALUE_RIGHT:
-                        angle_proportion = (target_data["angle"] - ANGLE_MAX_VALUE_RIGHT) / (ANGLE_MAX_VALUE_LEFT - ANGLE_MAX_VALUE_RIGHT)
-                        angle_degrees = -60 + (angle_proportion * 120)
+                    if target_data["angle"] >= ANGLE_MIN_VALUE_LEFT:
+                        angle_proportion = (target_data["angle"] - ANGLE_MIN_VALUE_LEFT) / (ANGLE_MAX_VALUE_LEFT - ANGLE_MIN_VALUE_LEFT)
+                        angle_degrees = -60 + (angle_proportion * 60)
+                    elif target_data["angle"] <= ANGLE_MAX_VALUE_RIGHT:
+                        angle_proportion = target_data["angle"] / ANGLE_MAX_VALUE_RIGHT
+                        angle_degrees = angle_proportion * 60
                     else:
                         angle_degrees = 0  # Default to 0 if angle is not in expected range
 
