@@ -13,8 +13,8 @@ RADAR_BAUDRATE = 256000
 RANGE_MAX = 8.0  # Maximum range in meters
 
 # Conversion factors based on measurements
-ANGLE_MAX_VALUE_LEFT = 34000  # Maximum value representing left 60 degrees boundary
-ANGLE_MIN_VALUE_LEFT = 32770  # Minimum value representing 0 degrees from left
+ANGLE_MAX_VALUE_LEFT = 32770  # Maximum value representing left 60 degrees boundary
+ANGLE_MIN_VALUE_LEFT =  34000 # Minimum value representing 0 degrees from left
 ANGLE_MAX_VALUE_RIGHT = 2000  # Maximum value representing right 60 degrees
 DISTANCE_CONVERSION_FACTOR = 33900  # Value representing 1 meter away
 ADDITIONAL_DISTANCE_FACTOR = 800  # Approximate value increment per meter after 1 meter
