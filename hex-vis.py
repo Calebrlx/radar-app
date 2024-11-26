@@ -59,7 +59,7 @@ class RadarApp:
         # Radar Plot
         self.fig, self.ax = plt.subplots(figsize=(5, 5))
         self.ax.set_xlim(-RANGE_MAX, RANGE_MAX)
-        self.ax.set_ylim(-RANGE_MAX, RANGE_MAX)
+        self.ax.set_ylim(0, RANGE_MAX)
         self.ax.set_aspect('equal', adjustable='datalim')
         self.ax.set_title("Radar View")
         self.ax.set_xlabel("X (m)")
@@ -119,7 +119,7 @@ class RadarApp:
                 # Clear existing targets
                 self.ax.clear()
                 self.ax.set_xlim(-RANGE_MAX, RANGE_MAX)
-                self.ax.set_ylim(-RANGE_MAX, RANGE_MAX)
+                self.ax.set_ylim(0, RANGE_MAX)
                 self.ax.set_title("Radar View")
                 self.ax.grid(True)
                 for r in range(1, int(RANGE_MAX) + 1):
@@ -135,7 +135,12 @@ class RadarApp:
 
                 if target_data:
                     # Convert angle and distance to meters and degrees
-                    angle_degrees = (target_data["angle"] / ANGLE_MAX_VALUE) * 60 - 60
+                    if target_data["angle"] > ANGLE_MAX_VALUE // 2:
+                        angle_value = ANGLE_MAX_VALUE - target_data["angle"]
+                        angle_degrees = -((angle_value / ANGLE_MAX_VALUE) * 60)
+                    else:
+                        angle_degrees = (target_data["angle"] / ANGLE_MAX_VALUE) * 60
+
                     distance_meters = (target_data["distance"] - DISTANCE_CONVERSION_FACTOR) / ADDITIONAL_DISTANCE_FACTOR + 1
 
                     x = distance_meters * math.cos(math.radians(angle_degrees))
