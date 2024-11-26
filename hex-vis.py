@@ -11,37 +11,41 @@ RADAR_PORT = '/dev/ttyTHS1'
 RADAR_BAUDRATE = 256000
 RANGE_MAX = 8.0  # Maximum range in meters
 
+# Conversion factors based on measurements
+ANGLE_MAX_VALUE = 33000  # Maximum value representing -60 degrees
+DISTANCE_CONVERSION_FACTOR = 33900  # Value representing 1 meter away
+ADDITIONAL_DISTANCE_FACTOR = 800  # Approximate value increment per meter after 1 meter
+
 # Decode packet function
 def decode_packet(raw_data):
     """
-    Decodes packets of raw binary data from the radar module.
+    Decodes a single target packet of raw binary data from the radar module.
     The radar packet format is assumed to include:
     - Angle (bytes 4-5, little-endian)
     - Distance (bytes 6-7, little-endian)
     - Speed/Trajectory (bytes 8-9, little-endian)
-    There may be multiple targets in a single packet.
     """
-    targets = []
     try:
-        for i in range(0, len(raw_data), 10):
-            if len(raw_data[i:i+10]) < 10:
-                continue
+        if len(raw_data) < 10:
+            return None
 
-            angle = int.from_bytes(raw_data[i+4:i+6], byteorder='little', signed=False)
-            distance = int.from_bytes(raw_data[i+6:i+8], byteorder='little', signed=False)
-            speed = int.from_bytes(raw_data[i+8:i+10], byteorder='little', signed=False)
+        # Decode angle, distance, and speed
+        angle = int.from_bytes(raw_data[4:6], byteorder='little', signed=False)
+        distance = int.from_bytes(raw_data[6:8], byteorder='little', signed=False)
+        speed = int.from_bytes(raw_data[8:10], byteorder='little', signed=False)
 
-            if angle == 0 and distance == 0 and speed == 0:
-                continue
+        # If all values are zero, there's no target
+        if angle == 0 and distance == 0 and speed == 0:
+            return None
 
-            targets.append({
-                "angle": angle,
-                "distance": distance,
-                "speed": speed,
-            })
+        return {
+            "angle": angle,
+            "distance": distance,
+            "speed": speed,
+        }
     except Exception as e:
         print(f"Error decoding packet: {e}")
-    return targets
+        return None
 
 # Main App Class
 class RadarApp:
@@ -73,7 +77,7 @@ class RadarApp:
         # Target List
         self.target_list = ttk.Treeview(self.root, columns=("ID", "Distance", "Angle", "Speed", "Trajectory"))
         self.target_list.heading("#0", text="ID")
-        self.target_list.heading("Distance", text="Distance (units)")
+        self.target_list.heading("Distance", text="Distance (m)")
         self.target_list.heading("Angle", text="Angle (degree)")
         self.target_list.heading("Speed", text="Speed (units)")
         self.target_list.heading("Trajectory", text="Trajectory")
@@ -95,7 +99,6 @@ class RadarApp:
         self.root.grid_columnconfigure(1, weight=1)
 
         # Start Data Updates
-        self.targets = {}
         self.update_data_thread = threading.Thread(target=self.update_data)
         self.update_data_thread.daemon = True
         self.update_data_thread.start()
@@ -105,7 +108,7 @@ class RadarApp:
             # Read radar data from serial
             if self.serial_connection.in_waiting:
                 raw_data = self.serial_connection.read(self.serial_connection.in_waiting)
-                target_list = decode_packet(raw_data)
+                target_data = decode_packet(raw_data)
 
                 # Clear existing targets
                 self.ax.clear()
@@ -117,25 +120,26 @@ class RadarApp:
                     self.ax.add_artist(plt.Circle((0, 0), r, color='gray', fill=False, linestyle='dashed'))
 
                 self.target_list.delete(*self.target_list.get_children())
-                self.targets.clear()
 
-                # Update radar plot and target list with new data
-                for idx, target_data in enumerate(target_list, start=1):
-                    x = target_data["distance"] * math.cos(math.radians(target_data["angle"]))
-                    y = target_data["distance"] * math.sin(math.radians(target_data["angle"]))
-                    self.ax.scatter(x, y, label=f"ID {idx}")
-                    self.targets[idx] = target_data
+                if target_data:
+                    # Convert angle and distance to meters and degrees
+                    angle_degrees = (target_data["angle"] / ANGLE_MAX_VALUE) * 60 - 60
+                    distance_meters = (target_data["distance"] - DISTANCE_CONVERSION_FACTOR) / ADDITIONAL_DISTANCE_FACTOR + 1
+
+                    x = distance_meters * math.cos(math.radians(angle_degrees))
+                    y = distance_meters * math.sin(math.radians(angle_degrees))
+                    self.ax.scatter(x, y, label="Target")
 
                     # Update target list
-                    self.target_list.insert("", "end", iid=idx, text=str(idx), values=(
-                        f"{target_data['distance']}",
-                        f"{target_data['angle']}",
+                    self.target_list.insert("", "end", iid=1, text="1", values=(
+                        f"{distance_meters:.2f}",
+                        f"{angle_degrees:.2f}",
                         f"{target_data['speed']}",
                         "Approaching" if target_data['speed'] > 0 else "Stationary"
                     ))
 
                     # Update raw data log
-                    raw_data = f"ID: {idx}, Distance: {target_data['distance']}, Angle: {target_data['angle']}, " \
+                    raw_data = f"ID: 1, Distance: {distance_meters:.2f} m, Angle: {angle_degrees:.2f} degrees, " \
                                f"Speed: {target_data['speed']}, Trajectory: {'Approaching' if target_data['speed'] > 0 else 'Stationary'}\n"
                     self.raw_data_text.insert(tk.END, raw_data)
                     self.raw_data_text.see(tk.END)
