@@ -13,7 +13,8 @@ RADAR_BAUDRATE = 256000
 RANGE_MAX = 8.0  # Maximum range in meters
 
 # Conversion factors based on measurements
-ANGLE_MAX_VALUE = 32770  # Maximum value representing left FOV boundary
+ANGLE_MAX_VALUE_LEFT = 34000  # Maximum value representing left FOV boundary
+ANGLE_MAX_VALUE_RIGHT = 2000  # Maximum value representing right FOV boundary
 DISTANCE_CONVERSION_FACTOR = 33900  # Value representing 1 meter away
 ADDITIONAL_DISTANCE_FACTOR = 800  # Approximate value increment per meter after 1 meter
 
@@ -139,11 +140,11 @@ class RadarApp:
 
                 if target_data:
                     # Convert angle and distance to meters and degrees
-                    if target_data["angle"] > ANGLE_MAX_VALUE // 2:
-                        angle_value = ANGLE_MAX_VALUE - target_data["angle"]
-                        angle_degrees = -((angle_value / ANGLE_MAX_VALUE) * 60)
+                    if target_data["angle"] >= ANGLE_MAX_VALUE_RIGHT:
+                        angle_proportion = (target_data["angle"] - ANGLE_MAX_VALUE_RIGHT) / (ANGLE_MAX_VALUE_LEFT - ANGLE_MAX_VALUE_RIGHT)
+                        angle_degrees = -60 + (angle_proportion * 120)
                     else:
-                        angle_degrees = (target_data["angle"] / ANGLE_MAX_VALUE) * 60
+                        angle_degrees = 0  # Default to 0 if angle is not in expected range
 
                     distance_meters = (target_data["distance"] - DISTANCE_CONVERSION_FACTOR) / ADDITIONAL_DISTANCE_FACTOR + 1
 
