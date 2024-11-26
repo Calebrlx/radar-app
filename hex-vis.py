@@ -14,29 +14,34 @@ RANGE_MAX = 8.0  # Maximum range in meters
 # Decode packet function
 def decode_packet(raw_data):
     """
-    Decodes a single packet of raw binary data from the radar module.
+    Decodes packets of raw binary data from the radar module.
     The radar packet format is assumed to include:
     - Angle (bytes 4-5, little-endian)
     - Distance (bytes 6-7, little-endian)
     - Speed/Trajectory (bytes 8-9, little-endian)
+    There may be multiple targets in a single packet.
     """
+    targets = []
     try:
-        if len(raw_data) < 10:  # Ensure the packet is long enough
-            return {"angle": None, "distance": None, "speed": None}
+        for i in range(0, len(raw_data), 10):
+            if len(raw_data[i:i+10]) < 10:
+                continue
 
-        # Decode angle, distance, and speed
-        angle = int.from_bytes(raw_data[4:6], byteorder='little', signed=False)
-        distance = int.from_bytes(raw_data[6:8], byteorder='little', signed=False)
-        speed = int.from_bytes(raw_data[8:10], byteorder='little', signed=False)
+            angle = int.from_bytes(raw_data[i+4:i+6], byteorder='little', signed=False)
+            distance = int.from_bytes(raw_data[i+6:i+8], byteorder='little', signed=False)
+            speed = int.from_bytes(raw_data[i+8:i+10], byteorder='little', signed=False)
 
-        return {
-            "angle": angle,
-            "distance": distance,
-            "speed": speed,
-        }
+            if angle == 0 and distance == 0 and speed == 0:
+                continue
+
+            targets.append({
+                "angle": angle,
+                "distance": distance,
+                "speed": speed,
+            })
     except Exception as e:
         print(f"Error decoding packet: {e}")
-        return {"angle": None, "distance": None, "speed": None}
+    return targets
 
 # Main App Class
 class RadarApp:
@@ -100,26 +105,29 @@ class RadarApp:
             # Read radar data from serial
             if self.serial_connection.in_waiting:
                 raw_data = self.serial_connection.read(self.serial_connection.in_waiting)
-                target_data = decode_packet(raw_data)
+                target_list = decode_packet(raw_data)
 
-                if target_data["distance"] is not None:
-                    # Update radar plot
-                    self.ax.clear()
-                    self.ax.set_xlim(-RANGE_MAX, RANGE_MAX)
-                    self.ax.set_ylim(-RANGE_MAX, RANGE_MAX)
-                    self.ax.set_title("Radar View")
-                    self.ax.grid(True)
-                    for r in range(1, int(RANGE_MAX) + 1):
-                        self.ax.add_artist(plt.Circle((0, 0), r, color='gray', fill=False, linestyle='dashed'))
+                # Clear existing targets
+                self.ax.clear()
+                self.ax.set_xlim(-RANGE_MAX, RANGE_MAX)
+                self.ax.set_ylim(-RANGE_MAX, RANGE_MAX)
+                self.ax.set_title("Radar View")
+                self.ax.grid(True)
+                for r in range(1, int(RANGE_MAX) + 1):
+                    self.ax.add_artist(plt.Circle((0, 0), r, color='gray', fill=False, linestyle='dashed'))
 
-                    target_id = len(self.targets) + 1
+                self.target_list.delete(*self.target_list.get_children())
+                self.targets.clear()
+
+                # Update radar plot and target list with new data
+                for idx, target_data in enumerate(target_list, start=1):
                     x = target_data["distance"] * math.cos(math.radians(target_data["angle"]))
                     y = target_data["distance"] * math.sin(math.radians(target_data["angle"]))
-                    self.ax.scatter(x, y, label=f"ID {target_id}")
-                    self.ax.legend()
+                    self.ax.scatter(x, y, label=f"ID {idx}")
+                    self.targets[idx] = target_data
 
                     # Update target list
-                    self.target_list.insert("", "end", iid=target_id, text=str(target_id), values=(
+                    self.target_list.insert("", "end", iid=idx, text=str(idx), values=(
                         f"{target_data['distance']}",
                         f"{target_data['angle']}",
                         f"{target_data['speed']}",
@@ -127,12 +135,12 @@ class RadarApp:
                     ))
 
                     # Update raw data log
-                    raw_data = f"ID: {target_id}, Distance: {target_data['distance']}, Angle: {target_data['angle']}, " \
+                    raw_data = f"ID: {idx}, Distance: {target_data['distance']}, Angle: {target_data['angle']}, " \
                                f"Speed: {target_data['speed']}, Trajectory: {'Approaching' if target_data['speed'] > 0 else 'Stationary'}\n"
                     self.raw_data_text.insert(tk.END, raw_data)
                     self.raw_data_text.see(tk.END)
 
-                    self.canvas.draw()
+                self.canvas.draw()
 
 # Run App
 if __name__ == "__main__":
