@@ -3,6 +3,7 @@ from tkinter import ttk
 import serial
 import threading
 import math
+import time
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import matplotlib.pyplot as plt
 
@@ -12,7 +13,7 @@ RADAR_BAUDRATE = 256000
 RANGE_MAX = 8.0  # Maximum range in meters
 
 # Conversion factors based on measurements
-ANGLE_MAX_VALUE = 33000  # Maximum value representing -60 degrees
+ANGLE_MAX_VALUE = 32770  # Maximum value representing left FOV boundary
 DISTANCE_CONVERSION_FACTOR = 33900  # Value representing 1 meter away
 ADDITIONAL_DISTANCE_FACTOR = 800  # Approximate value increment per meter after 1 meter
 
@@ -104,6 +105,9 @@ class RadarApp:
         self.root.grid_columnconfigure(0, weight=3)
         self.root.grid_columnconfigure(1, weight=1)
 
+        # Store target dots
+        self.target_dots = []
+
         # Start Data Updates
         self.update_data_thread = threading.Thread(target=self.update_data)
         self.update_data_thread.daemon = True
@@ -145,7 +149,9 @@ class RadarApp:
 
                     x = distance_meters * math.cos(math.radians(angle_degrees))
                     y = distance_meters * math.sin(math.radians(angle_degrees))
-                    self.ax.scatter(x, y, label="Target")
+
+                    # Add target to list and update plot
+                    self.target_dots.append({"x": x, "y": y, "timestamp": time.time()})
 
                     # Update target list
                     self.target_list.insert("", "end", iid=1, text="1", values=(
@@ -160,6 +166,17 @@ class RadarApp:
                                f"Speed: {target_data['speed']}, Trajectory: {'Approaching' if target_data['speed'] > 0 else 'Stationary'}\n"
                     self.raw_data_text.insert(tk.END, raw_data)
                     self.raw_data_text.see(tk.END)
+
+                # Draw fading dots
+                current_time = time.time()
+                new_target_dots = []
+                for dot in self.target_dots:
+                    age = current_time - dot["timestamp"]
+                    if age < 3:  # Keep dots for 3 seconds
+                        alpha = max(0, 1 - age / 3)  # Fade over time
+                        self.ax.scatter(dot["x"], dot["y"], color='red', alpha=alpha)
+                        new_target_dots.append(dot)
+                self.target_dots = new_target_dots
 
                 self.canvas.draw()
 
