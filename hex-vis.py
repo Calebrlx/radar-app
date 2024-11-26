@@ -70,6 +70,12 @@ class RadarApp:
         for r in range(1, int(RANGE_MAX) + 1):
             self.ax.add_artist(plt.Circle((0, 0), r, color='gray', fill=False, linestyle='dashed'))
 
+        # Draw FOV lines
+        fov_left = math.radians(-60)
+        fov_right = math.radians(60)
+        self.ax.plot([0, RANGE_MAX * math.cos(fov_left)], [0, RANGE_MAX * math.sin(fov_left)], color='blue', linestyle='dotted')
+        self.ax.plot([0, RANGE_MAX * math.cos(fov_right)], [0, RANGE_MAX * math.sin(fov_right)], color='blue', linestyle='dotted')
+
         self.canvas = FigureCanvasTkAgg(self.fig, master=self.root)
         self.canvas_widget = self.canvas.get_tk_widget()
         self.canvas_widget.grid(row=0, column=0, rowspan=2, sticky='nsew')
@@ -118,6 +124,12 @@ class RadarApp:
                 self.ax.grid(True)
                 for r in range(1, int(RANGE_MAX) + 1):
                     self.ax.add_artist(plt.Circle((0, 0), r, color='gray', fill=False, linestyle='dashed'))
+
+                # Draw FOV lines
+                fov_left = math.radians(-60)
+                fov_right = math.radians(60)
+                self.ax.plot([0, RANGE_MAX * math.cos(fov_left)], [0, RANGE_MAX * math.sin(fov_left)], color='blue', linestyle='dotted')
+                self.ax.plot([0, RANGE_MAX * math.cos(fov_right)], [0, RANGE_MAX * math.sin(fov_right)], color='blue', linestyle='dotted')
 
                 self.target_list.delete(*self.target_list.get_children())
 
