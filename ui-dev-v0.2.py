@@ -7,13 +7,13 @@ import random
 app = tk.Tk()
 app.title("Advanced Radar Display")
 app.geometry("1000x800")
-app.configure(bg="#2b2b2b")  # Dark, noisy gray background
+app.configure(bg="#2b2b2b")
 
 # Colors for radar and elements
 radar_bg_color = "#1e1e1e"
 line_color = "#001f3f"  # Navy blue
-tracked_area_color = "#00ffff1A"  # Subtle cyan tint
-fog_color = "#444444"  # Lighter gray for fog
+tracked_area_color = "#00ffff"  # Cyan
+fog_color = "#444444"  # Lighter gray 
 target_colors = ["red", "green", "blue", "yellow", "purple", "orange"]
 
 # Sidebar for controls
