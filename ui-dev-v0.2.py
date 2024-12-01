@@ -5,15 +5,14 @@ import random
 
 # Set up the main application window
 app = tk.Tk()
-app.title("Advanced Radar Display")
+app.title("Technical Radar Display")
 app.geometry("1000x800")
 app.configure(bg="#2b2b2b")  # Dark gray background
 
 # Colors for radar and elements
-radar_bg_color = "#1e1e1e"
-line_color = "#001f3f"  # Navy blue
-tracked_area_color = "#00ffff"  # Cyan color
-fog_color = "#444444"  # Lighter gray for fog
+radar_bg_color = "#2b2b2b"  # Match the app background for seamless integration
+line_color = "#001f3f"  # Navy blue for grid lines
+tracked_area_color = "#00ffff"  # Cyan color for tracked area
 target_colors = ["red", "green", "blue", "yellow", "purple", "orange"]
 
 # Sidebar for controls
@@ -25,46 +24,26 @@ topbar = tk.Frame(app, bg="black", height=125)
 topbar.pack(side="top", fill="x")
 
 # Main canvas for radar display
-canvas_frame = tk.Frame(app, bg="black")
+canvas_frame = tk.Frame(app, bg=radar_bg_color)
 canvas_frame.pack(side="top", fill="both", expand=True)
 
-canvas = tk.Canvas(canvas_frame, bg=radar_bg_color, width=800, height=600)
+canvas = tk.Canvas(canvas_frame, bg=radar_bg_color, width=800, height=600, highlightthickness=0)
 canvas.pack(expand=True)
 
-# Draw radar semi-circle grid
+# Draw radar grid
 def draw_radar_grid():
-    radar_radius = 300
-    center_x, center_y = 400, 0  # Center of the half-circle at the top
+    radar_radius = 300  # Fixed radar radius
+    max_distance = 8  # Radar range in meters
+    center_x, center_y = 400, 0  # Center of the half-circle
 
-    # Draw foggy and tracked areas
-    canvas.create_arc(
-        center_x - radar_radius,
-        center_y - radar_radius,
-        center_x + radar_radius,
-        center_y + radar_radius,
-        start=180,
-        extent=150,
-        outline="",
-        fill=fog_color,
-    )
-    canvas.create_arc(
-        center_x - radar_radius,
-        center_y - radar_radius,
-        center_x + radar_radius,
-        center_y + radar_radius,
-        start=330,
-        extent=30,
-        outline="",
-        fill=tracked_area_color,
-    )
-
-    # Draw arcs
-    for r in range(50, radar_radius + 50, 50):
+    # Draw arcs for distance rings (scaled to 8m range)
+    for i in range(1, max_distance + 1):
+        radius = i * (radar_radius / max_distance)
         canvas.create_arc(
-            center_x - r,
-            center_y - r,
-            center_x + r,
-            center_y + r,
+            center_x - radius,
+            center_y - radius,
+            center_x + radius,
+            center_y + radius,
             start=180,
             extent=180,
             outline=line_color,
@@ -72,7 +51,7 @@ def draw_radar_grid():
             width=1,
         )
 
-    # Draw lines
+    # Draw lines for every 15 degrees
     for angle in range(180, 361, 15):
         rad = math.radians(angle)
         x = center_x + radar_radius * math.cos(rad)
@@ -85,8 +64,8 @@ draw_radar_grid()
 def generate_random_targets():
     targets = []
     for _ in range(random.randint(1, 5)):
-        distance = random.uniform(50, 300)
-        angle = random.uniform(180, 360)  # Constrain within the radar view
+        distance = random.uniform(1, 8)  # Constrain within the radar range
+        angle = random.uniform(180, 360)  # Constrain within the half-circle
         velocity = random.uniform(0, 10)
         targets.append({"distance": distance, "angle": angle, "velocity": velocity})
     return targets
@@ -96,9 +75,11 @@ def draw_targets(targets):
     center_x, center_y = 400, 0
 
     for idx, target in enumerate(targets):
+        # Scale distance to the radar radius
+        distance = target["distance"] * (300 / 8)
         rad = math.radians(target["angle"])
-        x = center_x + target["distance"] * math.cos(rad)
-        y = center_y + target["distance"] * math.sin(rad)
+        x = center_x + distance * math.cos(rad)
+        y = center_y + distance * math.sin(rad)
         target_circle = canvas.create_oval(
             x - 5, y - 5, x + 5, y + 5, fill=target_colors[idx % len(target_colors)], tags="target"
         )
