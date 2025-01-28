@@ -2,8 +2,8 @@ import serial
 import time
 
 # Configuration for the radar module
-RADAR_PORT = '/dev/ttyTHS1'  # Replace with your actual UART port
-RADAR_BAUDRATE = 256000      # Default baud rate for the radar module
+RADAR_PORT = '/dev/ttyTHS1' 
+RADAR_BAUDRATE = 256000
 
 def decode_packet(raw_data):
     """
